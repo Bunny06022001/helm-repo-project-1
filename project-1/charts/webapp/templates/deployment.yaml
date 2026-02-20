@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webapp.fullname" . }}
+  labels:
+    {{- include "webapp.labels" . | nindent 4 }}
+spec:
+  # Desired number of pods
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "webapp.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Max extra pods created during update
+      maxSurge: 1
+      # Max pods allowed to be unavailable during update
+      maxUnavailable: 0
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "webapp.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+
+    spec:
+      serviceAccountName: {{ include "webapp.fullname" . }}
+
+      # Basic pod security posture (production signal)
+      securityContext:
+        runAsNonRoot: true
+
+      containers:
+        - name: webapp
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 80
+
+          envFrom:
+            # Load ConfigMap key-values as env vars
+            - configMapRef:
+                name: {{ include "webapp.fullname" . }}-config
+            # Load Secret key-values as env vars
+            - secretRef:
+                name: {{ include "webapp.fullname" . }}-secret
+
+          # Resource limits/requests are a must for production
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          # Readiness = “can receive traffic?”
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # Liveness = “is it alive or stuck?”
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # Graceful shutdown pattern (production signal)
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+
+      terminationGracePeriodSeconds: 20

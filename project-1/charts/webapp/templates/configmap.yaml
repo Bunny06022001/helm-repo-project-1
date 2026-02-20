@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webapp.fullname" . }}-config
+  labels:
+    {{- include "webapp.labels" . | nindent 4 }}
+data:
+  APP_ENV: "dev"
+  APP_MSG: "hello from configmap"
