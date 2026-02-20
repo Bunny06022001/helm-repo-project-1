@@ -1,0 +1,12 @@
+image:
+  repository: 167345113114.dkr.ecr.ap-south-1.amazonaws.com/project-1
+  tag: v1
+  pullPolicy: Always
+replicaCount: 2
+service:
+  type: NodePort
+  port: 80
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
