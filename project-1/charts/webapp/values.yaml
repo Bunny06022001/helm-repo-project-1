@@ -1,6 +1,6 @@
 image:
   repository: 167345113114.dkr.ecr.ap-south-1.amazonaws.com/project-1
-  tag: e368358
+  tag: ebfa4a5
   pullPolicy: Always
 replicaCount: 2
 service:
